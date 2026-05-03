@@ -4,10 +4,11 @@ export const mockUser: User = {
   id: 'USR001',
   email: 'priya.sharma@kiranalens.com',
   name: 'Priya Sharma',
-  role: 'analyst',
+  role: 'credit_officer',
+  created_at: '2026-04-12T09:45:00Z',
 };
 
-export const mockAssessments: Assessment[] = [
+export const mockAssessments: Assessment[] = ([
   // Tier A - Prime Location Store in Mumbai (High Score, Pre-Approved)
   {
     id: 'ASS001',
@@ -27,7 +28,7 @@ export const mockAssessments: Assessment[] = [
     confidenceScore: 91,
     riskFlags: [],
     recommendation: 'pre_approve',
-    status: 'completed',
+    status: 'complete',
     assessedBy: 'Priya Sharma',
     signalBreakdown: {
       visual: {
@@ -79,7 +80,7 @@ export const mockAssessments: Assessment[] = [
       },
     ],
     recommendation: 'needs_verification',
-    status: 'completed',
+    status: 'complete',
     assessedBy: 'Priya Sharma',
     signalBreakdown: {
       visual: {
@@ -136,7 +137,7 @@ export const mockAssessments: Assessment[] = [
       },
     ],
     recommendation: 'reject',
-    status: 'completed',
+    status: 'complete',
     assessedBy: 'Priya Sharma',
     signalBreakdown: {
       visual: {
@@ -157,4 +158,4 @@ export const mockAssessments: Assessment[] = [
       },
     },
   },
-];
+] as any);

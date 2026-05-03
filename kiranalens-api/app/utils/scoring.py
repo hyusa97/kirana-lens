@@ -2,7 +2,7 @@
 Scoring utilities for KiranaLens assessment pipeline
 Pure functions for CSQS calculation, tier assignment, and risk assessment
 """
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 # Signal weights - all 12 signals summing to 1.0
 SIGNAL_WEIGHTS = {
@@ -209,7 +209,8 @@ def compute_confidence(
     visual_features: Dict,
     geo_features: Dict,
     image_count: int,
-    gps_accuracy: float = None
+    gps_accuracy: float = None,
+    estimation_result: Optional[Dict] = None
 ) -> float:
     """
     Compute confidence score for the assessment.
@@ -261,6 +262,15 @@ def compute_confidence(
     # High competition should correlate with high diversity
     competition_consistency = 1.0 - abs((100 - competition_score) - diversity_score) / 100.0
     consistency_checks.append(competition_consistency)
+
+    if estimation_result:
+        supply_sales = estimation_result.get("supply_sales", (0, 0))
+        demand_sales = estimation_result.get("demand_sales", (0, 0))
+        supply_mid = (supply_sales[0] + supply_sales[1]) / 2 if supply_sales else 0
+        demand_mid = (demand_sales[0] + demand_sales[1]) / 2 if demand_sales else 0
+        if max(supply_mid, demand_mid) > 0:
+            alignment = min(supply_mid, demand_mid) / max(supply_mid, demand_mid)
+            consistency_checks.append(max(0.0, min(1.0, alignment)))
     
     consistency_factor = sum(consistency_checks) / len(consistency_checks)
     confidence_factors.append(('consistency', consistency_factor, 0.4))
@@ -271,7 +281,13 @@ def compute_confidence(
     return max(0.0, min(1.0, total_confidence))
 
 
-def detect_fraud_flags(visual_features: Dict, geo_features: Dict) -> List[str]:
+def detect_fraud_flags(
+    visual_features: Dict,
+    geo_features: Dict,
+    estimation_result: Optional[Dict] = None,
+    image_count: Optional[int] = None,
+    optional_inputs: Optional[Dict] = None,
+) -> List[str]:
     """
     Detect potential fraud flags based on feature analysis.
     
@@ -291,46 +307,89 @@ def detect_fraud_flags(visual_features: Dict, geo_features: Dict) -> List[str]:
         except (KeyError, TypeError, ValueError):
             # Skip rule if data is missing or invalid
             continue
+
+    estimation_result = estimation_result or {}
+    optional_inputs = optional_inputs or {}
+
+    supply_sales = estimation_result.get("supply_sales")
+    demand_sales = estimation_result.get("demand_sales")
+    if supply_sales and demand_sales:
+        supply_mid = (supply_sales[0] + supply_sales[1]) / 2
+        demand_mid = (demand_sales[0] + demand_sales[1]) / 2
+        if max(supply_mid, demand_mid) > 0 and min(supply_mid, demand_mid) / max(supply_mid, demand_mid) < 0.45:
+            flags.append("inventory_demand_mismatch")
+
+    competition_factor = estimation_result.get("competition_factor")
+    demand_index = estimation_result.get("demand_index")
+    if competition_factor and demand_index:
+        if competition_factor[0] < 0.7 and demand_index[1] > 1.15:
+            flags.append("high_competition_zone")
+
+    turnover_days = estimation_result.get("turnover_days")
+    if turnover_days and demand_index:
+        if turnover_days[1] > 25 and demand_index[0] < 0.85:
+            flags.append("overstocking_suspected")
+
+    warnings = visual_features.get("image_quality_warnings", [])
+    if (image_count is not None and image_count < 3) or len(warnings) >= 3:
+        flags.append("low_visual_coverage")
+
+    rent = optional_inputs.get("rent")
+    shop_size = optional_inputs.get("shop_size")
+    inventory_capacity = estimation_result.get("inventory_capacity")
+    if inventory_capacity:
+        inventory_mid = (inventory_capacity[0] + inventory_capacity[1]) / 2
+        if rent and rent > 40_000 and inventory_mid < 150_000:
+            flags.append("inconsistent_manual_inputs")
+        if shop_size and shop_size > 500 and inventory_mid < 150_000:
+            flags.append("inconsistent_manual_inputs")
     
-    return flags
+    return list(dict.fromkeys(flags))
 
 
-def get_recommendation(confidence: float, flags: List[str], csqs: float) -> str:
+def get_recommendation(
+    confidence: float,
+    flags: List[str],
+    daily_sales_range: Tuple[int, int],
+    monthly_income_range: Tuple[int, int],
+    csqs: Optional[float] = None,
+) -> str:
     """
-    Get recommendation based on confidence, flags, and CSQS score.
+    Get recommendation based on estimates, confidence, and risk flags.
     
     Args:
         confidence: Confidence score (0.0 to 1.0)
         flags: List of fraud flags
-        csqs: CSQS score (0.0 to 100.0)
+        daily_sales_range: Final daily sales range.
+        monthly_income_range: Final monthly income range.
+        csqs: Deprecated fallback score.
         
     Returns:
-        str: Recommendation ('pre_approve', 'needs_verification', 'reject')
+        str: Recommendation ('pre_approve', 'proceed_with_caution', 'needs_verification', 'reject')
     """
+    daily_mid = (daily_sales_range[0] + daily_sales_range[1]) / 2
+    income_mid = (monthly_income_range[0] + monthly_income_range[1]) / 2
+    severe_flags = {
+        "inventory_demand_mismatch",
+        "low_visual_coverage",
+        "inconsistent_manual_inputs",
+    }
+    has_severe_flag = any(flag in severe_flags or "high sales activity" in flag.lower() for flag in flags)
+
     # Immediate rejection criteria
-    if csqs < 25 or confidence < 0.3:
+    if confidence < 0.3 or daily_sales_range[1] < 4_000 or monthly_income_range[1] < 8_000:
         return 'reject'
     
-    # High-risk flags that require verification
-    high_risk_keywords = ['high sales activity', 'poor store exterior', 'overstocked']
-    has_high_risk_flags = any(
-        any(keyword in flag.lower() for keyword in high_risk_keywords)
-        for flag in flags
-    )
-    
     # Pre-approval criteria
-    if (csqs >= 70 and 
-        confidence >= 0.8 and 
-        len(flags) == 0):
+    if confidence >= 0.8 and not flags and daily_mid >= 12_000 and income_mid >= 35_000:
         return 'pre_approve'
-    
-    # Needs verification criteria
-    if (csqs >= 40 and 
-        confidence >= 0.5 and 
-        (len(flags) <= 2 and not has_high_risk_flags)):
+
+    if confidence >= 0.6 and len(flags) <= 2 and not has_severe_flag and daily_mid >= 8_000:
+        return 'proceed_with_caution'
+
+    if confidence >= 0.45 and monthly_income_range[1] >= 12_000:
         return 'needs_verification'
-    
-    # Default to rejection for remaining cases
+
     return 'reject'
 
 

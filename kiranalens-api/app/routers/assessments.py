@@ -26,6 +26,9 @@ async def create_assessment(
     lng: float = Form(...),
     store_name: Optional[str] = Form(None),
     gps_accuracy_metres: Optional[float] = Form(None),
+    monthly_rent: Optional[float] = Form(None),
+    years_in_operation: Optional[int] = Form(None),
+    shop_size: Optional[float] = Form(None),
     images: List[UploadFile] = File(...),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
@@ -68,6 +71,9 @@ async def create_assessment(
         lng=lng,
         store_name=store_name,
         gps_accuracy_metres=gps_accuracy_metres,
+        monthly_rent=monthly_rent,
+        years_in_operation=years_in_operation,
+        shop_size=shop_size,
         background_tasks=background_tasks
     )
     

@@ -45,8 +45,9 @@ export default function LoginPage() {
       });
       
       // Handle both real API (camelCase) and mock API (snake_case) formats
-      const token = response.accessToken || (response as any).access_token;
-      const refToken = response.refreshToken || (response as any).refresh_token;
+      const authResponse = response as any;
+      const token = authResponse.accessToken || authResponse.access_token;
+      const refToken = authResponse.refreshToken || authResponse.refresh_token;
       
       setUser(response.user);
       setTokens(token, refToken);

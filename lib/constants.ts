@@ -45,6 +45,7 @@ export const STORE_TIERS: Record<string, {
 };
 
 export const RISK_FLAG_DESCRIPTIONS: Record<string, string> = {
+  // Legacy descriptive flags
   low_inventory: 'Store has significantly lower inventory levels than expected for its tier',
   poor_organization: 'Store layout and organization need improvement for better operations',
   high_competition: 'High density of competing stores detected in the catchment area',
@@ -55,6 +56,18 @@ export const RISK_FLAG_DESCRIPTIONS: Record<string, string> = {
   irregular_refill: 'Inventory refill patterns suggest irregular supply chain',
   poor_road_access: 'Limited road access may affect supply chain and customer reach',
   seasonal_dependency: 'Store shows high dependency on seasonal demand patterns',
+  // Economic model flags
+  inventory_demand_mismatch: 'Large gap between supply-driven and demand-driven sales estimates — manual review required',
+  high_competition_zone: 'Store is in a high-competition area with strong nearby demand — margin pressure risk',
+  overstocking_suspected: 'Slow turnover combined with low demand index suggests potential overstocking',
+  low_visual_coverage: 'Fewer than 3 images submitted or significant image quality issues — confidence is low',
+  inconsistent_manual_inputs: 'Declared rent or shop size does not align with visual inventory estimates',
+  // Legacy fraud flags from vision pipeline
+  low_inventory_high_sales: 'Low inventory but high sales activity detected — verify stock levels',
+  poor_exterior_prime_location: 'Poor store exterior in a prime location — may indicate misrepresentation',
+  overstocked_low_activity: 'Overstocked inventory with low customer activity — stagnant stock risk',
+  high_competition_low_differentiation: 'High competition with low product variety — business viability concern',
+  inconsistent_organization: 'Shelf management and store organisation signals are inconsistent',
 };
 
 export const SIGNAL_LABELS: Record<string, {
@@ -157,6 +170,13 @@ export const RECOMMENDATION_CONFIG: Record<string, {
     bgColor: '#FFFBEB',
     borderColor: '#F59E0B',
     description: 'Store requires manual verification before final decision',
+  },
+  proceed_with_caution: {
+    label: 'Proceed with Caution',
+    color: '#F59E0B',
+    bgColor: '#FFFBEB',
+    borderColor: '#F59E0B',
+    description: 'Store has acceptable economics but some signals should be checked before final approval',
   },
   reject: {
     label: 'Rejected',

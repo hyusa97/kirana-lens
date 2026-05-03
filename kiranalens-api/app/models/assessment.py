@@ -56,6 +56,9 @@ class Assessment(Base):
     lat = Column(Numeric(10, 7), nullable=False)
     lng = Column(Numeric(10, 7), nullable=False)
     gps_accuracy_metres = Column(Float, nullable=True)
+    monthly_rent = Column(Float, nullable=True)
+    years_in_operation = Column(Integer, nullable=True)
+    shop_size = Column(Float, nullable=True)
     
     # Image storage
     image_urls = Column(JSONB, nullable=False, default=list)

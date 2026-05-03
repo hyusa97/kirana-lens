@@ -8,6 +8,9 @@ export interface CreateAssessmentRequest {
   lng: number;
   storeName?: string;
   gpsAccuracyMetres?: number;
+  monthlyRent?: number;
+  yearsInOperation?: number;
+  shopSize?: number;
 }
 
 export interface GetAssessmentsParams {
@@ -47,6 +50,15 @@ const assessmentService = {
     }
     if (data.gpsAccuracyMetres) {
       formData.append('gps_accuracy_metres', data.gpsAccuracyMetres.toString());
+    }
+    if (data.monthlyRent) {
+      formData.append('monthly_rent', data.monthlyRent.toString());
+    }
+    if (data.yearsInOperation !== undefined) {
+      formData.append('years_in_operation', data.yearsInOperation.toString());
+    }
+    if (data.shopSize) {
+      formData.append('shop_size', data.shopSize.toString());
     }
 
     const response = await apiClient.post<Assessment>('/api/v1/assessments', formData, {

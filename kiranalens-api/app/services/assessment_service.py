@@ -16,9 +16,10 @@ from app.services.geo_service import GeoService
 from app.services.storage_service import StorageService
 from app.services.vision_service import VisionService
 from app.utils.scoring import (
-    compute_confidence, compute_csqs, csqs_to_revenue_ranges, csqs_to_tier,
+    compute_confidence, compute_csqs, csqs_to_tier,
     detect_fraud_flags, get_recommendation, inventory_band_to_score, refill_signal_to_score
 )
+from app.utils.sales_estimation import run_complete_estimation
 
 
 class AssessmentService:
@@ -64,6 +65,9 @@ class AssessmentService:
         lng: float,
         store_name: Optional[str] = None,
         gps_accuracy_metres: Optional[float] = None,
+        monthly_rent: Optional[float] = None,
+        years_in_operation: Optional[int] = None,
+        shop_size: Optional[float] = None,
         background_tasks: BackgroundTasks = None
     ) -> Assessment:
         """
@@ -105,6 +109,9 @@ class AssessmentService:
                 lat=lat,
                 lng=lng,
                 gps_accuracy_metres=gps_accuracy_metres,
+                monthly_rent=monthly_rent,
+                years_in_operation=years_in_operation,
+                shop_size=shop_size,
                 status=AssessmentStatus.PENDING,
                 image_urls=[],  # Will be updated after upload
                 risk_flags=[],
@@ -200,8 +207,8 @@ class AssessmentService:
             )
             self.db.add(geo_features)
             
-            # Step 3: Compute CSQS score
-            print("🧮 Step 3: Computing CSQS score...")
+            # Step 3: Compute CSQS score (kept for backward compatibility)
+            print("🧮 Step 3: Computing CSQS (legacy) and building feature dictionaries...")
             visual_dict = {
                 "shelf_density_index": vision_result["shelf_density_index"],
                 "sku_diversity_score": vision_result["sku_diversity_score"],
@@ -222,44 +229,85 @@ class AssessmentService:
             
             csqs = compute_csqs(visual_dict, geo_dict)
             
-            # Step 4: Determine store tier
-            print("🏪 Step 4: Determining store tier...")
+            # Step 4: Determine store tier (kept for backward compatibility)
+            print("🏪 Step 4: Determining store tier (legacy CSQS tier)...")
             store_tier = csqs_to_tier(csqs)
             
-            # Step 5: Calculate revenue ranges
-            print("💰 Step 5: Calculating revenue ranges...")
-            revenue_ranges = csqs_to_revenue_ranges(csqs)
+            # Step 5: Run range-based economic estimation
+            print("💰 Step 5: Running range-based economic sales estimation...")
+            estimation_visual_dict = {
+                "shelf_density_index": vision_result["shelf_density_index"],
+                "sku_diversity_score": vision_result["sku_diversity_score"],
+                "inventory_value_band": vision_result["inventory_value_band"],
+                "refill_signal": vision_result["refill_signal"],
+                "store_organization_score": vision_result["store_organization_score"],
+                "counter_activity_proxy": vision_result["counter_activity_proxy"],
+                "exterior_quality_score": vision_result["exterior_quality_score"],
+                "image_quality_warnings": vision_result["image_quality_warnings"],
+            }
+            estimation_geo_dict = {
+                **geo_dict,
+                "competitor_count": geo_result["competitor_count"],
+                "poi_count": geo_result["poi_count"],
+            }
+            optional_inputs = {
+                "rent": assessment.monthly_rent,
+                "years_in_operation": assessment.years_in_operation,
+                "shop_size": assessment.shop_size,
+            }
+            estimation_result = run_complete_estimation(
+                estimation_visual_dict,
+                estimation_geo_dict,
+                optional_inputs,
+            )
             
             # Step 6: Compute confidence score
             print("📊 Step 6: Computing confidence score...")
             confidence_score = compute_confidence(
-                visual_dict,
-                geo_dict,
+                estimation_visual_dict,
+                estimation_geo_dict,
                 len(assessment.image_urls),
-                assessment.gps_accuracy_metres
+                assessment.gps_accuracy_metres,
+                estimation_result,
             )
             
             # Step 7: Detect fraud flags
             print("🚩 Step 7: Detecting fraud flags...")
-            fraud_flags = detect_fraud_flags(visual_dict, geo_dict)
+            fraud_flags = detect_fraud_flags(
+                estimation_visual_dict,
+                estimation_geo_dict,
+                estimation_result,
+                len(assessment.image_urls),
+                optional_inputs,
+            )
             
             # Step 8: Get recommendation
             print("✅ Step 8: Generating recommendation...")
-            recommendation = get_recommendation(confidence_score, fraud_flags, csqs)
+            recommendation = get_recommendation(
+                confidence_score,
+                fraud_flags,
+                estimation_result["daily_sales_range"],
+                estimation_result["monthly_income_range"],
+                csqs,
+            )
             
             # Update assessment with all results
             assessment.csqs = csqs
             assessment.store_tier = store_tier
             assessment.confidence_score = confidence_score
-            assessment.daily_sales_min = revenue_ranges["daily_sales_min"]
-            assessment.daily_sales_max = revenue_ranges["daily_sales_max"]
-            assessment.monthly_revenue_min = revenue_ranges["monthly_revenue_min"]
-            assessment.monthly_revenue_max = revenue_ranges["monthly_revenue_max"]
-            assessment.monthly_income_min = revenue_ranges["monthly_income_min"]
-            assessment.monthly_income_max = revenue_ranges["monthly_income_max"]
+            assessment.daily_sales_min = estimation_result["daily_sales_range"][0]
+            assessment.daily_sales_max = estimation_result["daily_sales_range"][1]
+            assessment.monthly_revenue_min = estimation_result["monthly_revenue_range"][0]
+            assessment.monthly_revenue_max = estimation_result["monthly_revenue_range"][1]
+            assessment.monthly_income_min = estimation_result["monthly_income_range"][0]
+            assessment.monthly_income_max = estimation_result["monthly_income_range"][1]
             assessment.risk_flags = fraud_flags
             assessment.recommendation = recommendation
-            assessment.signal_breakdown = {**visual_dict, **geo_dict}
+            assessment.signal_breakdown = {
+                "visual": visual_dict,
+                "geo": estimation_geo_dict,
+                "economic_breakdown": estimation_result,
+            }
             assessment.status = AssessmentStatus.COMPLETE
             
             await self.db.commit()
@@ -455,7 +503,7 @@ class AssessmentService:
                 progress_step = 2  # Vision analysis complete
             if geo_features:
                 progress_step = 4  # Geographic analysis complete
-            if assessment.csqs is not None:
+            if assessment.daily_sales_min is not None:
                 progress_step = 6  # Scoring complete
         elif assessment.status == AssessmentStatus.COMPLETE:
             progress_step = 6

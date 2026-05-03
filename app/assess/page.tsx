@@ -23,6 +23,9 @@ export default function AssessPage() {
     storeName: '',
     notes: '',
     gpsAccuracy: 0,
+    monthlyRent: '',
+    yearsInOperation: '',
+    shopSize: '',
   });
 
   const createAssessment = useCreateAssessment();
@@ -48,9 +51,11 @@ export default function AssessPage() {
       images: formData.images,
       lat: formData.lat,
       lng: formData.lng,
-      store_name: formData.storeName || undefined,
-      gps_accuracy: formData.gpsAccuracy || undefined,
-      notes: formData.notes || undefined,
+      storeName: formData.storeName || undefined,
+      gpsAccuracyMetres: formData.gpsAccuracy || undefined,
+      monthlyRent: formData.monthlyRent ? Number(formData.monthlyRent) : undefined,
+      yearsInOperation: formData.yearsInOperation ? Number(formData.yearsInOperation) : undefined,
+      shopSize: formData.shopSize ? Number(formData.shopSize) : undefined,
       onUploadProgress: (progress) => {
         setUploadProgress(progress);
       },
@@ -137,6 +142,51 @@ export default function AssessPage() {
                   placeholder="Any additional notes about the store..."
                 />
                 <p className="text-xs text-gray-500 mt-1">{formData.notes.length}/200 characters</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="monthlyRent" className="block text-sm font-medium text-gray-700 mb-2">
+                    Monthly Rent
+                  </label>
+                  <input
+                    type="number"
+                    id="monthlyRent"
+                    min="0"
+                    value={formData.monthlyRent}
+                    onChange={(e) => setFormData({ ...formData, monthlyRent: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-input focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+                    placeholder="e.g., 12000"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="yearsInOperation" className="block text-sm font-medium text-gray-700 mb-2">
+                    Years Open
+                  </label>
+                  <input
+                    type="number"
+                    id="yearsInOperation"
+                    min="0"
+                    value={formData.yearsInOperation}
+                    onChange={(e) => setFormData({ ...formData, yearsInOperation: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-input focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+                    placeholder="e.g., 4"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="shopSize" className="block text-sm font-medium text-gray-700 mb-2">
+                    Shop Size
+                  </label>
+                  <input
+                    type="number"
+                    id="shopSize"
+                    min="0"
+                    value={formData.shopSize}
+                    onChange={(e) => setFormData({ ...formData, shopSize: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-input focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+                    placeholder="sq ft"
+                  />
+                </div>
               </div>
             </div>
 

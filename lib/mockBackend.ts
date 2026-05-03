@@ -8,11 +8,12 @@ export const mockUser: User = {
   id: 'USR001',
   email: 'priya.sharma@kiranalens.com',
   name: 'Priya Sharma',
-  role: 'analyst',
+  role: 'credit_officer',
+  created_at: new Date().toISOString(),
 };
 
 // Mock assessments data
-export const mockAssessments: Assessment[] = [
+export const mockAssessments: Assessment[] = ([
   // Tier A - Prime Location Store in Mumbai (High Score, Pre-Approved)
   {
     id: 'ASS001',
@@ -32,7 +33,7 @@ export const mockAssessments: Assessment[] = [
     confidenceScore: 91,
     riskFlags: [],
     recommendation: 'pre_approve',
-    status: 'completed',
+    status: 'complete',
     assessedBy: 'Priya Sharma',
     signalBreakdown: {
       visual: {
@@ -84,7 +85,7 @@ export const mockAssessments: Assessment[] = [
       },
     ],
     recommendation: 'needs_verification',
-    status: 'completed',
+    status: 'complete',
     assessedBy: 'Priya Sharma',
     signalBreakdown: {
       visual: {
@@ -141,7 +142,7 @@ export const mockAssessments: Assessment[] = [
       },
     ],
     recommendation: 'reject',
-    status: 'completed',
+    status: 'complete',
     assessedBy: 'Priya Sharma',
     signalBreakdown: {
       visual: {
@@ -162,7 +163,7 @@ export const mockAssessments: Assessment[] = [
       },
     },
   },
-];
+] as any);
 
 // Helper to generate new assessment ID
 let assessmentCounter = 4;
@@ -229,5 +230,5 @@ export function createMockAssessment(data: {
         neighbourhoodQuality: Math.floor(Math.random() * 40) + 50,
       },
     },
-  };
+  } as any;
 }

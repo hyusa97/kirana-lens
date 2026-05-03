@@ -46,7 +46,7 @@ export const api = {
     // Mock implementation
     await new Promise((resolve) => setTimeout(resolve, 1000));
     
-    const newAssessment: Assessment = {
+    const newAssessment: any = {
       id: 'ASS' + Math.random().toString(36).substr(2, 6).toUpperCase(),
       createdAt: new Date().toISOString(),
       storeName: formData.get('storeName') as string,
@@ -64,7 +64,7 @@ export const api = {
       confidenceScore: Math.floor(Math.random() * 30) + 60, // Random 60-90
       riskFlags: [],
       recommendation: 'needs_verification',
-      status: 'completed',
+      status: 'complete',
       assessedBy: mockUser.name,
       signalBreakdown: {
         visual: {

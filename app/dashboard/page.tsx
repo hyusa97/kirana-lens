@@ -20,12 +20,12 @@ export default function DashboardPage() {
   const needsVerification = assessments.filter((a) => a.recommendation === 'needs_verification').length;
   const rejected = assessments.filter((a) => a.recommendation === 'reject').length;
   const avgScore = assessments.length > 0 
-    ? Math.round(assessments.reduce((sum, a) => sum + (a.csqs || 0), 0) / assessments.length)
+    ? Math.round(assessments.reduce((sum, a) => sum + Number(a.csqs || 0), 0) / assessments.length)
     : 0;
 
   // Recent assessments (5 most recent)
   const recentAssessments = [...assessments]
-    .sort((a, b) => new Date(b.createdAt || b.created_at).getTime() - new Date(a.createdAt || a.created_at).getTime())
+    .sort((a, b) => new Date((b as any).createdAt || b.created_at).getTime() - new Date((a as any).createdAt || a.created_at).getTime())
     .slice(0, 5);
 
   // Donut chart data
@@ -38,9 +38,9 @@ export default function DashboardPage() {
   // Most common risk flag
   const riskFlagCounts: Record<string, number> = {};
   assessments.forEach(assessment => {
-    if (assessment.riskFlags || assessment.risk_flags) {
-      const flags = assessment.riskFlags || assessment.risk_flags || [];
-      flags.forEach(flag => {
+    if ((assessment as any).riskFlags || assessment.risk_flags) {
+      const flags = (assessment as any).riskFlags || assessment.risk_flags || [];
+      flags.forEach((flag: string | { message: string }) => {
         const flagText = typeof flag === 'string' ? flag : flag.message;
         const key = flagText.toLowerCase().replace(/\s+/g, '_');
         riskFlagCounts[key] = (riskFlagCounts[key] || 0) + 1;
@@ -73,7 +73,8 @@ export default function DashboardPage() {
   }
 
   if (error) {
-    const isNetworkError = error.message === 'Network Error' || error.code === 'ECONNABORTED';
+    const queryError = error as Error & { code?: string };
+    const isNetworkError = queryError.message === 'Network Error' || queryError.code === 'ECONNABORTED';
     
     return (
       <PageWrapper title="Dashboard" description="Overview of your kirana store assessments">
@@ -172,12 +173,12 @@ export default function DashboardPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {recentAssessments.map((assessment) => {
-                    const csqs = assessment.csqs || 0;
+                    const csqs = Number(assessment.csqs || 0);
                     const scoreColor = getScoreColor(csqs);
-                    const storeName = assessment.storeName || assessment.store_name || 'Unknown Store';
+                    const storeName = (assessment as any).storeName || assessment.store_name || 'Unknown Store';
                     const address = assessment.address || 'Unknown Location';
                     const location = address.includes(',') ? address.split(',').slice(-2).join(',').trim() : address;
-                    const createdAt = assessment.createdAt || assessment.created_at;
+                    const createdAt = (assessment as any).createdAt || assessment.created_at;
                     
                     return (
                       <tr key={assessment.id} className="hover:bg-gray-50">

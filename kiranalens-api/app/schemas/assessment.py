@@ -3,7 +3,7 @@ Assessment Pydantic schemas
 """
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
@@ -17,6 +17,9 @@ class CreateAssessmentRequest(BaseModel):
     lng: float = Field(..., ge=-180, le=180, description="Longitude coordinate")
     store_name: Optional[str] = Field(None, max_length=200, description="Store name")
     gps_accuracy_metres: Optional[float] = Field(None, ge=0, description="GPS accuracy in metres")
+    monthly_rent: Optional[float] = Field(None, ge=0, description="Monthly rent in rupees")
+    years_in_operation: Optional[int] = Field(None, ge=0, description="Operating history in years")
+    shop_size: Optional[float] = Field(None, ge=0, description="Shop size in square feet")
     
     class Config:
         json_schema_extra = {
@@ -96,6 +99,9 @@ class AssessmentResponse(BaseModel):
     lat: Decimal
     lng: Decimal
     gps_accuracy_metres: Optional[float]
+    monthly_rent: Optional[float]
+    years_in_operation: Optional[int]
+    shop_size: Optional[float]
     
     # Image storage
     image_urls: List[str]
@@ -116,13 +122,17 @@ class AssessmentResponse(BaseModel):
     monthly_revenue_max: Optional[int]
     monthly_income_min: Optional[int]
     monthly_income_max: Optional[int]
+    daily_sales_range: Optional[Tuple[int, int]] = None
+    monthly_revenue_range: Optional[Tuple[int, int]] = None
+    monthly_income_range: Optional[Tuple[int, int]] = None
     
     # Risk and recommendation
     risk_flags: List[str]
     recommendation: Optional[str]
     
     # Analysis breakdown
-    signal_breakdown: Optional[Dict[str, float]]
+    signal_breakdown: Optional[Dict[str, Any]]
+    economic_breakdown: Optional[Dict[str, Any]] = None
     
     # Report
     pdf_report_url: Optional[str]
@@ -133,6 +143,39 @@ class AssessmentResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+    @validator("daily_sales_range", pre=True, always=True)
+    def build_daily_sales_range(cls, v, values):
+        if v is not None:
+            return v
+        low = values.get("daily_sales_min")
+        high = values.get("daily_sales_max")
+        return (low, high) if low is not None and high is not None else None
+
+    @validator("monthly_revenue_range", pre=True, always=True)
+    def build_monthly_revenue_range(cls, v, values):
+        if v is not None:
+            return v
+        low = values.get("monthly_revenue_min")
+        high = values.get("monthly_revenue_max")
+        return (low, high) if low is not None and high is not None else None
+
+    @validator("monthly_income_range", pre=True, always=True)
+    def build_monthly_income_range(cls, v, values):
+        if v is not None:
+            return v
+        low = values.get("monthly_income_min")
+        high = values.get("monthly_income_max")
+        return (low, high) if low is not None and high is not None else None
+
+    @validator("economic_breakdown", pre=True, always=True)
+    def extract_economic_breakdown(cls, v, values):
+        if v is not None:
+            return v
+        signal_breakdown = values.get("signal_breakdown") or {}
+        if isinstance(signal_breakdown, dict):
+            return signal_breakdown.get("economic_breakdown")
+        return None
 
 
 class AssessmentListResponse(BaseModel):
@@ -183,7 +226,7 @@ class AssessmentFilters(BaseModel):
     """Filters for assessment queries"""
     status: Optional[AssessmentStatus] = None
     store_tier: Optional[str] = Field(None, pattern=r'^[ABCDE]$')
-    recommendation: Optional[str] = Field(None, pattern=r'^(pre_approve|needs_verification|reject)$')
+    recommendation: Optional[str] = Field(None, pattern=r'^(pre_approve|proceed_with_caution|needs_verification|reject)$')
     min_csqs: Optional[float] = Field(None, ge=0, le=100)
     max_csqs: Optional[float] = Field(None, ge=0, le=100)
     created_after: Optional[datetime] = None

@@ -46,6 +46,9 @@ export function getScoreColor(score: number): string {
 
 // Get confidence label based on score
 export function getConfidenceLabel(score: number): 'High' | 'Medium' | 'Low' {
+  if (score <= 1) {
+    score = score * 100;
+  }
   if (score >= 75) return 'High';
   if (score >= 50) return 'Medium';
   return 'Low';

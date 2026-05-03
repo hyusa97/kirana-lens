@@ -35,21 +35,32 @@ export interface GeoFeatures {
 }
 
 export interface SignalBreakdown {
-  shelf_density_index: number;
-  sku_diversity_score: number;
-  inventory_value_band: number;
-  refill_signal: number;
-  store_organization_score: number;
-  counter_activity_proxy: number;
-  exterior_quality_score: number;
-  road_type_score: number;
-  catchment_density_score: number;
-  footfall_proxy_index: number;
-  competition_density_score: number;
-  neighbourhood_quality_score: number;
+  visual?: Record<string, number | string | string[]>;
+  geo?: Record<string, number | string>;
+  economic_breakdown?: EconomicBreakdown;
+  [key: string]: any;
 }
 
-export type RecommendationType = 'pre_approve' | 'needs_verification' | 'reject';
+export interface EconomicBreakdown {
+  inventory_capacity?: [number, number];
+  turnover_days?: [number, number];
+  demand_index?: [number, number];
+  competition_factor?: [number, number];
+  efficiency_factor?: [number, number];
+  manual_adjustment?: [number, number];
+  supply_sales?: [number, number];
+  demand_sales?: [number, number];
+  margin_range?: [number, number];
+  [key: string]: [number, number] | undefined;
+}
+
+export interface RiskFlag {
+  type: 'high' | 'medium' | 'low';
+  message: string;
+  severity: number;
+}
+
+export type RecommendationType = 'pre_approve' | 'proceed_with_caution' | 'needs_verification' | 'reject';
 export type AssessmentStatus = 'pending' | 'processing' | 'complete' | 'error';
 
 export interface Assessment {
@@ -62,6 +73,9 @@ export interface Assessment {
   lat: string; // Decimal as string from backend
   lng: string; // Decimal as string from backend
   gps_accuracy_metres: number | null;
+  monthly_rent: number | null;
+  years_in_operation: number | null;
+  shop_size: number | null;
   image_urls: string[];
   status: AssessmentStatus;
   error_message: string | null;
@@ -74,9 +88,13 @@ export interface Assessment {
   monthly_revenue_max: number | null;
   monthly_income_min: number | null;
   monthly_income_max: number | null;
+  daily_sales_range?: [number, number] | null;
+  monthly_revenue_range?: [number, number] | null;
+  monthly_income_range?: [number, number] | null;
   risk_flags: string[];
   recommendation: RecommendationType | null;
   signal_breakdown: SignalBreakdown | null;
+  economic_breakdown?: EconomicBreakdown | null;
   pdf_report_url: string | null;
   visual_features: VisualFeatures | null;
   geo_features: GeoFeatures | null;
@@ -93,6 +111,9 @@ export interface AssessmentTransformed {
   lat: number; // Converted to number
   lng: number; // Converted to number
   gpsAccuracyMetres: number | null;
+  monthlyRent: number | null;
+  yearsInOperation: number | null;
+  shopSize: number | null;
   imageUrls: string[];
   status: AssessmentStatus;
   errorMessage: string | null;
@@ -105,9 +126,13 @@ export interface AssessmentTransformed {
   monthlyRevenueMax: number | null;
   monthlyIncomeMin: number | null;
   monthlyIncomeMax: number | null;
+  dailySalesRange?: [number, number] | null;
+  monthlyRevenueRange?: [number, number] | null;
+  monthlyIncomeRange?: [number, number] | null;
   riskFlags: string[];
   recommendation: RecommendationType | null;
   signalBreakdown: SignalBreakdown | null;
+  economicBreakdown?: EconomicBreakdown | null;
   pdfReportUrl: string | null;
   visualFeatures: VisualFeatures | null;
   geoFeatures: GeoFeatures | null;
@@ -148,5 +173,8 @@ export interface AssessmentFormData {
   lat?: number;
   lng?: number;
   gpsAccuracyMetres?: number;
+  monthlyRent?: number;
+  yearsInOperation?: number;
+  shopSize?: number;
   images: File[];
 }

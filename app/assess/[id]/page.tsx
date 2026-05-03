@@ -2,7 +2,7 @@
 
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Calendar, DollarSign, TrendingUp, Building, Loader2, Download, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, DollarSign, TrendingUp, Building, Loader2, Download, AlertTriangle, Scale } from 'lucide-react';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ScoreGauge from '@/components/ui/ScoreGauge';
 import RangeCard from '@/components/ui/RangeCard';
@@ -59,23 +59,34 @@ export default function AssessmentResultPage({ params }: { params: { id: string 
     notFound();
   }
 
+  const a = assessment as any;
   const recommendationConfig = RECOMMENDATION_CONFIG[assessment.recommendation || 'needs_verification'];
-  const confidenceScore = assessment.confidenceScore || assessment.confidence_score || 0;
+  const confidenceScoreRaw = Number(a.confidenceScore || assessment.confidence_score || 0);
+  const confidenceScore = confidenceScoreRaw <= 1 ? confidenceScoreRaw * 100 : confidenceScoreRaw;
   const confidenceLabel = getConfidenceLabel(confidenceScore);
-  const storeName = assessment.storeName || assessment.store_name || 'Unknown Store';
+  const storeName = a.storeName || assessment.store_name || 'Unknown Store';
   const address = assessment.address || 'Unknown Location';
-  const createdAt = assessment.createdAt || assessment.created_at;
-  const csqs = assessment.csqs || 0;
-  const storeTier = assessment.storeTier || assessment.store_tier;
-  const dailySalesMin = assessment.dailySalesMin || assessment.daily_sales_min || 0;
-  const dailySalesMax = assessment.dailySalesMax || assessment.daily_sales_max || 0;
-  const monthlyRevenueMin = assessment.monthlyRevenueMin || assessment.monthly_revenue_min || 0;
-  const monthlyRevenueMax = assessment.monthlyRevenueMax || assessment.monthly_revenue_max || 0;
-  const monthlyIncomeMin = assessment.monthlyIncomeMin || assessment.monthly_income_min || 0;
-  const monthlyIncomeMax = assessment.monthlyIncomeMax || assessment.monthly_income_max || 0;
-  const riskFlags = assessment.riskFlags || assessment.risk_flags || [];
-  const signalBreakdown = assessment.signalBreakdown || assessment.signal_breakdown;
-  const imageUrls = assessment.imageUrls || assessment.image_urls || [];
+  const createdAt = a.createdAt || assessment.created_at;
+  const csqs = Number(assessment.csqs || 0);
+  const storeTier = a.storeTier || assessment.store_tier;
+  const dailySalesRange = a.dailySalesRange || assessment.daily_sales_range;
+  const monthlyRevenueRange = a.monthlyRevenueRange || assessment.monthly_revenue_range;
+  const monthlyIncomeRange = a.monthlyIncomeRange || assessment.monthly_income_range;
+  const dailySalesMin = dailySalesRange?.[0] || a.dailySalesMin || assessment.daily_sales_min || 0;
+  const dailySalesMax = dailySalesRange?.[1] || a.dailySalesMax || assessment.daily_sales_max || 0;
+  const monthlyRevenueMin = monthlyRevenueRange?.[0] || a.monthlyRevenueMin || assessment.monthly_revenue_min || 0;
+  const monthlyRevenueMax = monthlyRevenueRange?.[1] || a.monthlyRevenueMax || assessment.monthly_revenue_max || 0;
+  const monthlyIncomeMin = monthlyIncomeRange?.[0] || a.monthlyIncomeMin || assessment.monthly_income_min || 0;
+  const monthlyIncomeMax = monthlyIncomeRange?.[1] || a.monthlyIncomeMax || assessment.monthly_income_max || 0;
+  const riskFlags = a.riskFlags || assessment.risk_flags || [];
+  const signalBreakdown = a.signalBreakdown || assessment.signal_breakdown;
+  const economicBreakdown = a.economicBreakdown || assessment.economic_breakdown || signalBreakdown?.economic_breakdown;
+  const imageUrls: string[] = a.imageUrls || assessment.image_urls || [];
+
+  const formatFactorRange = (range?: [number, number]) => {
+    if (!range) return 'N/A';
+    return `${range[0].toFixed(2)} - ${range[1].toFixed(2)}`;
+  };
 
   return (
     <PageWrapper>
@@ -136,7 +147,7 @@ export default function AssessmentResultPage({ params }: { params: { id: string 
             <div className="mt-4 text-center">
               <p className="text-sm text-gray-600 mb-1">Store Tier</p>
               <p className="text-lg font-heading font-bold text-primary">
-                {getTierLabel(storeTier)}
+                {getTierLabel(storeTier || '-')}
               </p>
             </div>
           </div>
@@ -219,6 +230,7 @@ export default function AssessmentResultPage({ params }: { params: { id: string 
                 style={{ backgroundColor: recommendationConfig.bgColor }}
               >
                 {assessment.recommendation === 'pre_approve' && '✓'}
+                {assessment.recommendation === 'proceed_with_caution' && '!'}
                 {assessment.recommendation === 'needs_verification' && '!'}
                 {assessment.recommendation === 'reject' && '✗'}
               </div>
@@ -233,6 +245,7 @@ export default function AssessmentResultPage({ params }: { params: { id: string 
               <p className="text-xs font-medium text-gray-700">Next Action:</p>
               <p className="text-xs text-gray-600 mt-1">
                 {assessment.recommendation === 'pre_approve' && 'Proceed with loan disbursement process. All criteria met.'}
+                {assessment.recommendation === 'proceed_with_caution' && 'Proceed after reviewing the supply, demand, and risk flag details.'}
                 {assessment.recommendation === 'needs_verification' && 'Schedule field visit for manual verification of flagged items.'}
                 {assessment.recommendation === 'reject' && 'Do not proceed with loan. Store does not meet minimum criteria.'}
               </p>
@@ -240,7 +253,59 @@ export default function AssessmentResultPage({ params }: { params: { id: string 
           </div>
         </div>
 
-        {/* ROW 3: Risk Flags */}
+        {/* ROW 3: Economic Breakdown */}
+        {economicBreakdown && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Scale className="text-accent" size={24} />
+              <h2 className="text-xl font-heading font-semibold text-primary">
+                Supply and Demand Breakdown
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <RangeCard
+                title="Inventory Capacity"
+                value={formatRupeeRange(economicBreakdown.inventory_capacity?.[0] || 0, economicBreakdown.inventory_capacity?.[1] || 0)}
+                subtitle="Supply capacity"
+              />
+              <RangeCard
+                title="Supply Sales"
+                value={formatRupeeRange(economicBreakdown.supply_sales?.[0] || 0, economicBreakdown.supply_sales?.[1] || 0)}
+                subtitle="Inventory constrained"
+              />
+              <RangeCard
+                title="Demand Sales"
+                value={formatRupeeRange(economicBreakdown.demand_sales?.[0] || 0, economicBreakdown.demand_sales?.[1] || 0)}
+                subtitle="Market constrained"
+              />
+              <RangeCard
+                title="Margin Range"
+                value={formatFactorRange(economicBreakdown.margin_range)}
+                subtitle="Profit margin"
+              />
+            </div>
+            <div className="mt-4 bg-white rounded-card border border-gray-200 p-6 grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <p className="text-gray-500">Turnover Days</p>
+                <p className="font-semibold text-primary">{economicBreakdown.turnover_days?.[0]} - {economicBreakdown.turnover_days?.[1]} days</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Demand Index</p>
+                <p className="font-semibold text-primary">{formatFactorRange(economicBreakdown.demand_index)}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Competition Factor</p>
+                <p className="font-semibold text-primary">{formatFactorRange(economicBreakdown.competition_factor)}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Efficiency Factor</p>
+                <p className="font-semibold text-primary">{formatFactorRange(economicBreakdown.efficiency_factor)}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ROW 4: Risk Flags */}
         {riskFlags.length > 0 && (
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-4">
@@ -250,9 +315,9 @@ export default function AssessmentResultPage({ params }: { params: { id: string 
               </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {riskFlags.map((flag, index) => {
+              {riskFlags.map((flag: string | { type: 'high' | 'medium' | 'low'; message: string; severity: number }, index: number) => {
                 const flagData = typeof flag === 'string' 
-                  ? { type: 'medium', message: flag, severity: 2 }
+                  ? { type: 'medium' as const, message: flag, severity: 2 }
                   : flag;
                 return (
                   <RiskFlagCard key={index} flag={flagData} />
@@ -262,11 +327,11 @@ export default function AssessmentResultPage({ params }: { params: { id: string 
           </div>
         )}
 
-        {/* ROW 4: Signal Breakdown */}
+        {/* ROW 5: Signal Breakdown */}
         {signalBreakdown && (
           <div className="mb-6">
             <h2 className="text-xl font-heading font-semibold text-primary mb-4">
-              How the Score Was Calculated
+              Input Signals
             </h2>
             <SignalBreakdown signals={signalBreakdown} />
           </div>
@@ -316,7 +381,7 @@ export default function AssessmentResultPage({ params }: { params: { id: string 
         <div className="mt-6 bg-gray-50 rounded-card p-4 text-sm text-gray-600">
           <div className="flex items-center justify-between">
             <span>Assessment ID: <span className="font-mono font-medium">{assessment.id}</span></span>
-            {assessment.assessedBy && <span>Assessed by: {assessment.assessedBy}</span>}
+            {a.assessedBy && <span>Assessed by: {a.assessedBy}</span>}
           </div>
         </div>
       </div>

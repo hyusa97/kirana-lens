@@ -29,8 +29,9 @@ export default function AssessmentTable({ assessments }: AssessmentTableProps) {
   };
 
   const sortedAssessments = [...assessments].sort((a, b) => {
-    let aVal: any = a[sortField];
-    let bVal: any = b[sortField];
+    const getValue = (item: any) => item[sortField] || item[sortField === 'createdAt' ? 'created_at' : sortField === 'storeName' ? 'store_name' : sortField];
+    let aVal: any = getValue(a);
+    let bVal: any = getValue(b);
 
     if (sortField === 'createdAt') {
       aVal = new Date(aVal).getTime();
@@ -96,12 +97,12 @@ export default function AssessmentTable({ assessments }: AssessmentTableProps) {
               <tr key={assessment.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4">
                   <div>
-                    <p className="font-medium text-gray-900">{assessment.storeName}</p>
+                    <p className="font-medium text-gray-900">{(assessment as any).storeName || assessment.store_name || 'Unknown Store'}</p>
                     <p className="text-sm text-gray-500 truncate max-w-xs">{assessment.address}</p>
                   </div>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-700">
-                  {formatDate(assessment.createdAt)}
+                  {formatDate((assessment as any).createdAt || assessment.created_at)}
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-lg font-heading font-bold text-primary">
@@ -111,14 +112,14 @@ export default function AssessmentTable({ assessments }: AssessmentTableProps) {
                 <td className="px-6 py-4">
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-badge text-xs font-medium border ${
-                      TIER_COLORS[assessment.storeTier]
+                      TIER_COLORS[(assessment as any).storeTier || assessment.store_tier || ''] || 'bg-gray-100 text-gray-800 border-gray-300'
                     }`}
                   >
-                    Tier {assessment.storeTier}
+                    Tier {(assessment as any).storeTier || assessment.store_tier || '-'}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-700">
-                  {formatRupees(assessment.monthlyRevenueMin)} - {formatRupees(assessment.monthlyRevenueMax)}
+                  {formatRupees((assessment as any).monthlyRevenueMin || assessment.monthly_revenue_min || 0)} - {formatRupees((assessment as any).monthlyRevenueMax || assessment.monthly_revenue_max || 0)}
                 </td>
                 <td className="px-6 py-4">
                   <StatusBadge status={assessment.recommendation} size="sm" />

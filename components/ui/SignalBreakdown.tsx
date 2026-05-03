@@ -17,9 +17,11 @@ export default function SignalBreakdown({ signals }: SignalBreakdownProps) {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
+  const toCamelKey = (key: string) => key.replace(/_([a-z])/g, (_, char) => char.toUpperCase());
+
   const renderFeatureScore = (key: string, value: number) => {
     const scoreColor = getScoreColor(value);
-    const signalInfo = SIGNAL_LABELS[key];
+    const signalInfo = SIGNAL_LABELS[key] || SIGNAL_LABELS[toCamelKey(key)];
     
     return (
       <div key={key} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
@@ -39,6 +41,25 @@ export default function SignalBreakdown({ signals }: SignalBreakdownProps) {
     );
   };
 
+  const visualSignals = signals.visual || {
+    shelf_density_index: signals.shelf_density_index,
+    sku_diversity_score: signals.sku_diversity_score,
+    inventory_value_band: signals.inventory_value_band,
+    refill_signal: signals.refill_signal,
+    store_organization_score: signals.store_organization_score,
+    counter_activity_proxy: signals.counter_activity_proxy,
+    exterior_quality_score: signals.exterior_quality_score,
+  };
+  const geoSignals = signals.geo || {
+    road_type_score: signals.road_type_score,
+    catchment_density_score: signals.catchment_density_score,
+    footfall_proxy_index: signals.footfall_proxy_index,
+    competition_density_score: signals.competition_density_score,
+    neighbourhood_quality_score: signals.neighbourhood_quality_score,
+  };
+  const numericEntries = (section: Record<string, unknown>) => Object.entries(section)
+    .filter(([, value]) => typeof value === 'number') as [string, number][];
+
   return (
     <div className="space-y-3">
       {/* Visual Features */}
@@ -55,7 +76,7 @@ export default function SignalBreakdown({ signals }: SignalBreakdownProps) {
         </button>
         {expandedSection === 'visual' && (
           <div className="px-6 pb-4">
-            {Object.entries(signals.visual).map(([key, value]) => renderFeatureScore(key, value))}
+            {numericEntries(visualSignals).map(([key, value]) => renderFeatureScore(key, value))}
           </div>
         )}
       </div>
@@ -74,7 +95,7 @@ export default function SignalBreakdown({ signals }: SignalBreakdownProps) {
         </button>
         {expandedSection === 'geo' && (
           <div className="px-6 pb-4">
-            {Object.entries(signals.geo).map(([key, value]) => renderFeatureScore(key, value))}
+            {numericEntries(geoSignals).map(([key, value]) => renderFeatureScore(key, value))}
           </div>
         )}
       </div>
