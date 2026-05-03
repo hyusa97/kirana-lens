@@ -1,0 +1,160 @@
+import type { Assessment, User } from './types';
+
+export const mockUser: User = {
+  id: 'USR001',
+  email: 'priya.sharma@kiranalens.com',
+  name: 'Priya Sharma',
+  role: 'analyst',
+};
+
+export const mockAssessments: Assessment[] = [
+  // Tier A - Prime Location Store in Mumbai (High Score, Pre-Approved)
+  {
+    id: 'ASS001',
+    createdAt: '2026-04-14T10:30:00Z',
+    storeName: 'Patel Provision Store',
+    address: 'Shop 15, Linking Road, Bandra West, Mumbai, Maharashtra 400050',
+    lat: 19.0596,
+    lng: 72.8295,
+    csqs: 87,
+    storeTier: 'A',
+    dailySalesMin: 35000,
+    dailySalesMax: 55000,
+    monthlyRevenueMin: 1050000,
+    monthlyRevenueMax: 1650000,
+    monthlyIncomeMin: 157500,
+    monthlyIncomeMax: 247500,
+    confidenceScore: 91,
+    riskFlags: [],
+    recommendation: 'pre_approve',
+    status: 'completed',
+    assessedBy: 'Priya Sharma',
+    signalBreakdown: {
+      visual: {
+        shelfDensityIndex: 92,
+        skuDiversityScore: 88,
+        inventoryValueBand: 85,
+        refillSignal: 90,
+        storeOrganizationScore: 94,
+        counterActivityProxy: 89,
+        exteriorQualityScore: 91,
+      },
+      geo: {
+        roadTypeScore: 95,
+        catchmentDensity: 93,
+        footfallProxyIndex: 91,
+        competitionDensity: 78,
+        neighbourhoodQuality: 96,
+      },
+    },
+  },
+
+  // Tier C - Average Store in Nagpur (Medium Score, Needs Verification)
+  {
+    id: 'ASS002',
+    createdAt: '2026-04-13T14:15:00Z',
+    storeName: 'Gupta Kirana Bhandar',
+    address: 'Plot 42, Dharampeth, Near Gandhi Sagar Lake, Nagpur, Maharashtra 440010',
+    lat: 21.1458,
+    lng: 79.0882,
+    csqs: 58,
+    storeTier: 'C',
+    dailySalesMin: 12000,
+    dailySalesMax: 22000,
+    monthlyRevenueMin: 360000,
+    monthlyRevenueMax: 660000,
+    monthlyIncomeMin: 54000,
+    monthlyIncomeMax: 99000,
+    confidenceScore: 67,
+    riskFlags: [
+      {
+        type: 'medium',
+        message: 'High competition in catchment area',
+        severity: 2,
+      },
+      {
+        type: 'medium',
+        message: 'Irregular inventory refill patterns detected',
+        severity: 2,
+      },
+    ],
+    recommendation: 'needs_verification',
+    status: 'completed',
+    assessedBy: 'Priya Sharma',
+    signalBreakdown: {
+      visual: {
+        shelfDensityIndex: 62,
+        skuDiversityScore: 58,
+        inventoryValueBand: 55,
+        refillSignal: 48,
+        storeOrganizationScore: 65,
+        counterActivityProxy: 60,
+        exteriorQualityScore: 63,
+      },
+      geo: {
+        roadTypeScore: 68,
+        catchmentDensity: 64,
+        footfallProxyIndex: 59,
+        competitionDensity: 42,
+        neighbourhoodQuality: 66,
+      },
+    },
+  },
+
+  // Tier E - Micro Store in Rural UP (Low Score, Rejected)
+  {
+    id: 'ASS003',
+    createdAt: '2026-04-12T09:45:00Z',
+    storeName: 'Yadav General Store',
+    address: 'Village Rampur, Post Tikri, Tehsil Sadar, Gorakhpur, Uttar Pradesh 273001',
+    lat: 26.7606,
+    lng: 83.3732,
+    csqs: 28,
+    storeTier: 'E',
+    dailySalesMin: 2500,
+    dailySalesMax: 5500,
+    monthlyRevenueMin: 75000,
+    monthlyRevenueMax: 165000,
+    monthlyIncomeMin: 11250,
+    monthlyIncomeMax: 24750,
+    confidenceScore: 48,
+    riskFlags: [
+      {
+        type: 'high',
+        message: 'Significantly low inventory levels for operational viability',
+        severity: 4,
+      },
+      {
+        type: 'high',
+        message: 'Poor store exterior condition affecting customer perception',
+        severity: 3,
+      },
+      {
+        type: 'medium',
+        message: 'Limited SKU diversity compared to area requirements',
+        severity: 2,
+      },
+    ],
+    recommendation: 'reject',
+    status: 'completed',
+    assessedBy: 'Priya Sharma',
+    signalBreakdown: {
+      visual: {
+        shelfDensityIndex: 32,
+        skuDiversityScore: 28,
+        inventoryValueBand: 25,
+        refillSignal: 30,
+        storeOrganizationScore: 35,
+        counterActivityProxy: 22,
+        exteriorQualityScore: 26,
+      },
+      geo: {
+        roadTypeScore: 38,
+        catchmentDensity: 24,
+        footfallProxyIndex: 28,
+        competitionDensity: 45,
+        neighbourhoodQuality: 32,
+      },
+    },
+  },
+];

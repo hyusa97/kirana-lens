@@ -1,0 +1,65 @@
+import Link from 'next/link';
+import { MapPin, Calendar } from 'lucide-react';
+import { formatDate, formatRupees } from '@/lib/utils';
+import { TIER_COLORS } from '@/lib/constants';
+import StatusBadge from '@/components/ui/StatusBadge';
+import type { Assessment } from '@/lib/types';
+
+interface AssessmentCardProps {
+  assessment: Assessment;
+}
+
+export default function AssessmentCard({ assessment }: AssessmentCardProps) {
+  return (
+    <Link href={`/assess/${assessment.id}`}>
+      <div className="bg-white rounded-card border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="font-heading font-semibold text-lg text-primary mb-1">
+              {assessment.storeName}
+            </h3>
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <MapPin size={14} />
+              <span className="truncate max-w-xs">{assessment.address}</span>
+            </div>
+          </div>
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-badge text-xs font-medium border ${
+              TIER_COLORS[assessment.storeTier]
+            }`}
+          >
+            Tier {assessment.storeTier}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <p className="text-xs text-gray-500 mb-1">CSQS Score</p>
+            <p className="text-2xl font-heading font-bold text-primary">{assessment.csqs}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Confidence</p>
+            <p className="text-2xl font-heading font-bold text-primary">
+              {Math.round(assessment.confidenceScore)}%
+            </p>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <p className="text-xs text-gray-500 mb-1">Monthly Revenue Range</p>
+          <p className="text-sm font-medium text-gray-900">
+            {formatRupees(assessment.monthlyRevenueMin)} - {formatRupees(assessment.monthlyRevenueMax)}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Calendar size={14} />
+            <span>{formatDate(assessment.createdAt)}</span>
+          </div>
+          <StatusBadge status={assessment.recommendation} size="sm" />
+        </div>
+      </div>
+    </Link>
+  );
+}
